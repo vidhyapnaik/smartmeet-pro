@@ -6,24 +6,48 @@ import { Building2, Users } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Room = Database["public"]["Tables"]["rooms"]["Row"];
+type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 
-export function RoomAvailability() {
-  const [rooms, setRooms] = useState<Room[]>([]);
+interface RoomWithBookings extends Room {
+  bookings: Booking[];
+}
+
+interface RoomAvailabilityProps {
+  selectedDate?: string | null;
+}
+
+export function RoomAvailability({ selectedDate }: RoomAvailabilityProps) {
+  const [rooms, setRooms] = useState<RoomWithBookings[]>([]);
   const [loading, setLoading] = useState(true);
+  const displayDate = selectedDate || new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     loadRooms();
-  }, []);
+  }, [displayDate]);
 
   const loadRooms = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: roomsData, error: roomsError } = await supabase
         .from("rooms")
         .select("*")
         .order("name");
 
-      if (error) throw error;
-      setRooms(data || []);
+      if (roomsError) throw roomsError;
+
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("date", displayDate)
+        .order("start_time");
+
+      if (bookingsError) throw bookingsError;
+
+      const roomsWithBookings = (roomsData || []).map((room) => ({
+        ...room,
+        bookings: (bookingsData || []).filter((b) => b.room_id === room.id),
+      }));
+
+      setRooms(roomsWithBookings);
     } catch (error) {
       console.error("Error loading rooms:", error);
     } finally {
@@ -59,27 +83,47 @@ export function RoomAvailability() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5 text-primary" />
-          Available Rooms
+          Room Availability
         </CardTitle>
-        <CardDescription>All meeting rooms at ULTS Global</CardDescription>
+        <CardDescription>
+          {displayDate === new Date().toISOString().split("T")[0]
+            ? "Today's bookings"
+            : `Bookings for ${new Date(displayDate).toLocaleDateString()}`}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="space-y-3">
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
+              className="p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-lg">{room.name}</h3>
-                {getAccessBadge(room.restriction_level)}
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold">{room.name}</h3>
+                  {getAccessBadge(room.restriction_level)}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  <span>{room.capacity}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                <Users className="h-3 w-3" />
-                <span>Capacity: {room.capacity}</span>
-              </div>
-              {room.description && (
-                <p className="text-xs text-muted-foreground">{room.description}</p>
+              {room.bookings.length === 0 ? (
+                <Badge variant="outline" className="text-xs">
+                  Available
+                </Badge>
+              ) : (
+                <div className="space-y-1">
+                  {room.bookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded"
+                    >
+                      {booking.start_time.substring(0, 5)} - {booking.end_time.substring(0, 5)}:{" "}
+                      {booking.purpose}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           ))}
