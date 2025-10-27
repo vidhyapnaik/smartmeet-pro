@@ -1,0 +1,4 @@
+project_id = "eosrebfpdthffcvwgqrt"
+
+[functions.parse-booking]
+verify_jwt = true
