@@ -1,5 +1,10 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,18 +12,52 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Lock files (optional to ignore one of these)
+bun.lockb
 
-# Editor directories and files
+# === Python / Flask backend ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+instance/
+.env
+.env/
+venv/
+backend/__pycache__/
+backend/venv/
+backend/.env
+
+# Flask & Build
+.mypy_cache/
+.pytest_cache/
+coverage/
+htmlcov/
+*.egg-info/
+*.egg
+build/
+develop-eggs/
+.eggs/
+pip-wheel-metadata/
+.tox/
+*.spec
+
+# === IDE / OS Files ===
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+__MACOSX/
+
+# === Supabase / Unused Cloud Folders ===
+supabase/
+supabase_old/
+*.bak
